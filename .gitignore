@@ -10,6 +10,7 @@
 /writable/logs/*
 /writable/session/*
 /writable/uploads/*
+/writable/debugbar/*
 !/writable/uploads/.gitkeep
 !/writable/.htaccess
 !/writable/index.html
