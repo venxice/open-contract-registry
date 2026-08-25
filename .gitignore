@@ -1,0 +1,25 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment
+.env
+
+# Writable (user uploads, logs, cache, sessions)
+/writable/cache/*
+/writable/logs/*
+/writable/session/*
+/writable/uploads/*
+!/writable/uploads/.gitkeep
+!/writable/.htaccess
+!/writable/index.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
