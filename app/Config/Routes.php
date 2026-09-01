@@ -5,6 +5,12 @@ use CodeIgniter\Router\RouteCollection;
 /** @var RouteCollection $routes */
 $routes->get('/', 'Public\Home::index');
 $routes->get('admin', 'Admin\Home::index');
+$routes->get('admin/login', 'Admin\Login::index');
+
+// API Auth Routes
+$routes->post('api/auth/login', 'Api\Auth::login');
+$routes->post('api/auth/logout', 'Api\Auth::logout');
+$routes->get('api/auth/check', 'Api\Auth::check');
 
 // API Routes
 $routes->group('api', function ($routes) {

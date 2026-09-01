@@ -31,6 +31,12 @@ class User extends BaseController
     public function create()
     {
         $data = $this->request->getJSON(true);
+
+        if (empty($data['password'])) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Password is required']);
+        }
+
+        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         $id = $this->userModel->insert($data);
         if (!$id) {
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Failed']);
@@ -44,6 +50,13 @@ class User extends BaseController
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Not found']);
         }
         $data = $this->request->getJSON(true);
+
+        if (!empty($data['password'])) {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        } else {
+            unset($data['password']);
+        }
+
         $this->userModel->update($id, $data);
         return $this->response->setJSON(['message' => 'Updated']);
     }

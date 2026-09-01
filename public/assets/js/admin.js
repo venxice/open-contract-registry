@@ -14,7 +14,25 @@ async function loadProjects() {
 async function loadUsers() {
     try { const r = await fetch(API_USERS); users = await r.json(); } catch(e) { users = []; }
 }
-async function loadAll() { await Promise.all([loadProjects(), loadUsers()]); render(); }
+async function checkAuth() {
+    try {
+        let res = await fetch('/api/auth/check');
+        if (!res.ok) { window.location.href = '/admin/login'; return false; }
+        let data = await res.json();
+        currentUser = data;
+        return true;
+    } catch(e) { window.location.href = '/admin/login'; return false; }
+}
+
+async function doLogout() {
+    await fetch('/api/auth/logout', {method:'POST'});
+    window.location.href = '/admin/login';
+}
+
+let currentUser = null;
+
+async function loadAll() {
+    if (!(await checkAuth())) return; await Promise.all([loadProjects(), loadUsers()]); render(); }
 
 function toast(message, type='success') {
     let el = document.createElement('div');
@@ -25,7 +43,7 @@ function toast(message, type='success') {
 }
 
 function header() {
-    return `<div class="admin-topbar"><div class="container-fluid px-3 px-lg-4"><div class="d-flex align-items-center justify-content-between" style="min-height:68px"><button class="brand-lockup text-white" onclick="adminTab='overview';loadAll()"><span class="brand-mark"><i class="bi bi-building"></i></span><span class="text-start"><span class="brand-name">Open Contract Register</span><span class="brand-sub text-white-50">Administrator console</span></span></button><a class="btn btn-sm btn-outline-light" href="/"><i class="bi bi-box-arrow-up-right me-1"></i>Public register</a></div></div></div>`;
+    return `<div class="admin-topbar"><div class="container-fluid px-3 px-lg-4"><div class="d-flex align-items-center justify-content-between" style="min-height:68px"><button class="brand-lockup text-white" onclick="adminTab='overview';loadAll()"><span class="brand-mark"><i class="bi bi-building"></i></span><span class="text-start"><span class="brand-name">Open Contract Register</span><span class="brand-sub text-white-50">Administrator console</span></span></button><div class="d-flex align-items-center gap-2"><span class="text-white-50 small me-2">${esc(currentUser?.name||'')}</span><a class="btn btn-sm btn-outline-light" href="/"><i class="bi bi-box-arrow-up-right me-1"></i>Public</a><button class="btn btn-sm btn-outline-light" onclick="doLogout()"><i class="bi bi-box-arrow-right me-1"></i>Logout</button></div></div></div></div>`;
 }
 
 function adminShell(content) {
@@ -144,7 +162,7 @@ async function deleteBidding(id) {
 async function userModal(id='') {
     let u = id ? users.find(x => x.user_id == id) : {first_name:'',last_name:'',middle_initial:'',email:'',role:'Editor',status:'ACTIVE'};
     let fullName = `${u.first_name||''} ${u.middle_initial?u.middle_initial+'. ':''}${u.last_name||''}`.trim();
-    document.body.insertAdjacentHTML('beforeend', `<div class="modal-backdrop-custom" onclick="if(event.target===this)this.remove()"><div class="custom-modal" style="max-width:620px"><div class="modal-head"><h2 class="mb-0">${id?'Edit user':'Create user'}</h2><button class="close-btn" onclick="this.closest('.modal-backdrop-custom').remove()"><i class="bi bi-x-lg"></i></button></div><form onsubmit="saveUser(event,'${id}')"><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Full name</label><input required id="user-name" class="form-control" value="${esc(fullName)}"></div><div class="col-md-6"><label class="form-label">Email</label><input required type="email" id="user-email" class="form-control" value="${esc(u.email||'')}"></div><div class="col-md-6"><label class="form-label">Role</label><select id="user-role" class="form-select"><option ${u.role==='Administrator'?'selected':''}>Administrator</option><option ${u.role==='Editor'?'selected':''}>Editor</option><option ${u.role==='Viewer'?'selected':''}>Viewer</option></select></div><div class="col-md-6"><label class="form-label">Status</label><select id="user-status" class="form-select"><option ${u.status==='ACTIVE'?'selected':''}>ACTIVE</option><option ${u.status==='INACTIVE'?'selected':''}>INACTIVE</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn-outline-civic" onclick="this.closest('.modal-backdrop-custom').remove()">Cancel</button><button class="btn-civic">Save user</button></div></form></div></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div class="modal-backdrop-custom" onclick="if(event.target===this)this.remove()"><div class="custom-modal" style="max-width:620px"><div class="modal-head"><h2 class="mb-0">${id?'Edit user':'Create user'}</h2><button class="close-btn" onclick="this.closest('.modal-backdrop-custom').remove()"><i class="bi bi-x-lg"></i></button></div><form onsubmit="saveUser(event,'${id}')"><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Full name</label><input required id="user-name" class="form-control" value="${esc(fullName)}"></div><div class="col-md-6"><label class="form-label">Email</label><input required type="email" id="user-email" class="form-control" value="${esc(u.email||'')}"></div><div class="col-md-6"><label class="form-label">Password</label><input type="password" id="user-password" class="form-control" placeholder="${id?'Leave blank to keep current':'Enter password'}" ${id?'':'required'}></div><div class="col-md-6"><label class="form-label">Role</label><select id="user-role" class="form-select"><option ${u.role==='Administrator'?'selected':''}>Administrator</option><option ${u.role==='Editor'?'selected':''}>Editor</option><option ${u.role==='Viewer'?'selected':''}>Viewer</option></select></div><div class="col-md-6"><label class="form-label">Status</label><select id="user-status" class="form-select"><option ${u.status==='ACTIVE'?'selected':''}>ACTIVE</option><option ${u.status==='INACTIVE'?'selected':''}>INACTIVE</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn-outline-civic" onclick="this.closest('.modal-backdrop-custom').remove()">Cancel</button><button class="btn-civic">Save user</button></div></form></div></div>`);
 }
 
 async function saveUser(e, id) {
@@ -166,6 +184,8 @@ async function saveUser(e, id) {
         role: e.target.querySelector('#user-role').value,
         status: e.target.querySelector('#user-status').value,
     };
+    let pw = e.target.querySelector('#user-password').value;
+    if (pw) data.password = pw;
     
     let url = id ? `${API_USERS}/${id}` : API_USERS;
     let method = id ? 'PUT' : 'POST';
