@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\BiddingModel;
 use App\Models\ProjectModel;
 use App\Models\DescriptionModel;
+use App\Models\AuditLogModel;
 
 class Bidding extends BaseController
 {
@@ -88,6 +89,7 @@ class Bidding extends BaseController
             return $this->response->setStatusCode(500)->setJSON(['error' => 'Transaction failed']);
         }
 
+        (new AuditLogModel())->log('bidding.created', "Created bidding record: {$data['contractor']} (Contract #{$data['contract_number']})");
         return $this->response->setStatusCode(201)->setJSON(['id' => $biddingId, 'message' => 'Created']);
     }
 
@@ -139,16 +141,19 @@ class Bidding extends BaseController
             return $this->response->setStatusCode(500)->setJSON(['error' => 'Transaction failed']);
         }
 
+        (new AuditLogModel())->log('bidding.updated', "Updated bidding record: {$data['contractor']} (Contract #{$data['contract_number']})");
         return $this->response->setJSON(['message' => 'Updated']);
     }
 
     public function delete($id = null)
     {
-        if (!$this->biddingModel->find($id)) {
+        $bidding = $this->biddingModel->find($id);
+        if (!$bidding) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Not found']);
         }
 
         $this->biddingModel->delete($id);
+        (new AuditLogModel())->log('bidding.deleted', "Deleted bidding record: {$bidding['contractor']} (Contract #{$bidding['contract_number']})");
         return $this->response->setJSON(['message' => 'Deleted']);
     }
 

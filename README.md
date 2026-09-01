@@ -1,69 +1,142 @@
-# CodeIgniter 4 Application Starter
+# Open Contract Register
 
-## What is CodeIgniter?
+A public bidding portal and admin panel built with CodeIgniter 4.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Features
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+- Public contract/bidding records viewing
+- Admin panel with user management (CRUD)
+- Google SSO login
+- Email/password login with password hashing
+- Audit trail (login, logout, user CRUD, bidding CRUD)
+- File attachments (PDF uploads)
+- PHP peso (₱) currency formatting
+- Responsive design (DM Sans, Libre Franklin, Space Mono)
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Requirements
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+- PHP 8.2+
+- MySQL
+- Composer
 
-## Installation & updates
+## Installation
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
-
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+```bash
+git clone https://github.com/venxice/open-contract-registry.git
+cd open-contract-registry
+composer install
+```
 
 ## Setup
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+### 1. Environment File
 
-## Important Change with index.php
+```bash
+cp env .env
+```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+Edit `.env`:
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+```env
+app.baseURL = 'http://localhost:8888'
 
-**Please** read the user guide for a better explanation of how CI4 works!
+database.default.hostname = localhost
+database.default.database = dbm_db
+database.default.username = root
+database.default.password =
+database.default.DBDriver = MySQLi
+```
 
-## Repository Management
+### 2. Database
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS dbm_db;"
+mysql -u root dbm_db < app/Database/dbm_db.sql
+```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+The SQL dump includes all tables and sample data.
 
-## Server Requirements
+### 3. Google SSO (Optional)
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+To enable Google login, you need to set up OAuth 2.0 credentials:
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Create OAuth 2.0 Client ID (Web application)
+3. Under **Authorized JavaScript origins**, add:
+   ```
+   http://localhost:8888
+   ```
+4. Under **Authorized redirect URIs**, add:
+   ```
+   http://localhost:8888/api/auth/google/callback
+   ```
+5. Copy your Client ID and Client Secret into `.env`:
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+```env
+app.googleClientId = 'YOUR_CLIENT_ID_HERE'
+app.googleClientSecret = 'YOUR_CLIENT_SECRET_HERE'
+```
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+> **Note:** Do not commit your `.env` file with real credentials to GitHub.
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## Running the App
+
+```bash
+php -S localhost:8888 -t public/ router.php
+```
+
+Open [http://localhost:8888](http://localhost:8888)
+
+## Admin Panel
+
+Open [http://localhost:8888/admin/login](http://localhost:8888/admin/login)
+
+**Default user:**
+- Email: `admin@example.com`
+- Password: `admin123`
+
+## Project Structure
+
+```
+app/
+├── Controllers/
+│   ├── Admin/          # Admin view controllers
+│   ├── Api/            # REST API (Auth, Bidding, User, Upload, AuditLog)
+│   └── Public/         # Public view controllers
+├── Models/             # UserModel, AuditLogModel
+├── Views/
+│   ├── admin/          # Admin panel (index, login)
+│   └── public/         # Public page
+├── Config/
+│   └── Routes.php      # All routes
+├── Database/
+│   └── dbm_db.sql      # Database dump with data
+public/
+├── assets/
+│   ├── css/            # style.css, admin.css
+│   └── js/             # public.js, admin.js
+└── uploads/            # Uploaded PDF files
+```
+
+## Routes
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/` | Public page |
+| GET | `/admin` | Admin panel |
+| GET | `/admin/login` | Login page |
+| POST | `/api/auth/login` | Email/password login |
+| POST | `/api/auth/logout` | Logout |
+| GET | `/api/auth/check` | Check session |
+| GET | `/api/auth/google` | Google SSO redirect |
+| GET | `/api/auth/google/callback` | Google SSO callback |
+| GET | `/api/biddings` | List biddings |
+| POST | `/api/biddings` | Create bidding |
+| PUT | `/api/biddings/:id` | Update bidding |
+| DELETE | `/api/biddings/:id` | Delete bidding |
+| GET | `/api/users` | List users |
+| POST | `/api/users` | Create user |
+| PUT | `/api/users/:id` | Update user |
+| DELETE | `/api/users/:id` | Delete user |
+| GET | `/api/audit-logs` | List audit logs |
+| POST | `/api/upload` | Upload file |

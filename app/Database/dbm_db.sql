@@ -16,6 +16,40 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `audit_logs`
+--
+
+DROP TABLE IF EXISTS `audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `audit_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `user_name` varchar(255) DEFAULT NULL,
+  `action` varchar(100) NOT NULL,
+  `description` text,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `page_url` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_action` (`action`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `audit_logs`
+--
+
+LOCK TABLES `audit_logs` WRITE;
+/*!40000 ALTER TABLE `audit_logs` DISABLE KEYS */;
+INSERT INTO `audit_logs` VALUES (1,4,' venice','logout','Signed out','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36','/index.php/api/auth/logout','2026-09-01 03:25:15'),(2,4,' venice','login','Signed in via email/password','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36','/index.php/api/auth/login','2026-09-01 03:25:34');
+/*!40000 ALTER TABLE `audit_logs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `tblbidding`
 --
 
@@ -126,7 +160,7 @@ CREATE TABLE `tbluser` (
 
 LOCK TABLES `tbluser` WRITE;
 /*!40000 ALTER TABLE `tbluser` DISABLE KEYS */;
-INSERT INTO `tbluser` VALUES (1,'','havs','','ascds@gmail.com','$2y$12$epQGmbVct4DWGpeQxutKLOqTKuXomPZHzyt/WnU0Zpw1fW4d1LNjm','Editor','ACTIVE'),(3,'','try','','try@gmail.com','$2y$12$epQGmbVct4DWGpeQxutKLOqTKuXomPZHzyt/WnU0Zpw1fW4d1LNjm','Editor','ACTIVE'),(4,'','venice','','venice@1234','$2y$12$epQGmbVct4DWGpeQxutKLOqTKuXomPZHzyt/WnU0Zpw1fW4d1LNjm','Editor','ACTIVE');
+INSERT INTO `tbluser` VALUES (1,'','havs','','ascds@gmail.com','$2y$12$XehVzqMGRRRrgrdth5a5SukP2d1GthdQWrCcygVL2ytZ8Nxb0EiqO','Editor','ACTIVE'),(3,'','try','','try@gmail.com','$2y$12$epQGmbVct4DWGpeQxutKLOqTKuXomPZHzyt/WnU0Zpw1fW4d1LNjm','Editor','INACTIVE'),(4,'','venice','','venice@1234','$2y$12$epQGmbVct4DWGpeQxutKLOqTKuXomPZHzyt/WnU0Zpw1fW4d1LNjm','Editor','ACTIVE');
 /*!40000 ALTER TABLE `tbluser` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -139,4 +173,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-01 10:18:04
+-- Dump completed on 2026-09-01 13:04:45

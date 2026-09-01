@@ -30,9 +30,12 @@ async function doLogout() {
 }
 
 let currentUser = null;
+let auditLogs = [];
+let auditPage = 0;
+let auditTotalPages = 0;
 
 async function loadAll() {
-    if (!(await checkAuth())) return; await Promise.all([loadProjects(), loadUsers()]); render(); }
+    if (!(await checkAuth())) return; await Promise.all([loadProjects(), loadUsers(), loadAuditLogs()]); render(); }
 
 function toast(message, type='success') {
     let el = document.createElement('div');
@@ -47,7 +50,7 @@ function header() {
 }
 
 function adminShell(content) {
-    return `<div class="admin-shell">${header()}<div class="admin-layout"><aside class="admin-sidebar"><p class="admin-sidebar-label">Workspace</p>${['overview','projects','users'].map((t,i)=>`<button class="admin-nav-btn ${adminTab===t?'active':''}" onclick="adminTab='${t}';render()"><i class="bi bi-${['grid-1x2','folder2-open','people'][i]}"></i><span>${t[0].toUpperCase()+t.slice(1)}</span></button>`).join('')}</aside><main class="admin-main">${content}</main></div></div>`;
+    return `<div class="admin-shell">${header()}<div class="admin-layout"><aside class="admin-sidebar"><p class="admin-sidebar-label">Workspace</p>${['overview','projects','users','audit'].map((t,i)=>`<button class="admin-nav-btn ${adminTab===t?'active':''}" onclick="adminTab='${t}';render()"><i class="bi bi-${['grid-1x2','folder2-open','people','clock-history'][i]}"></i><span>${t==='audit'?'Audit trail':t[0].toUpperCase()+t.slice(1)}</span></button>`).join('')}</aside><main class="admin-main">${content}</main></div></div>`;
 }
 
 function overview() {
@@ -76,8 +79,31 @@ function usersList() {
     return adminShell(`<div class="admin-heading"><div><div class="eyebrow">Access control</div><h1>Users</h1><p>Manage who can publish and maintain the register.</p></div><button class="btn-civic" onclick="userModal()"><i class="bi bi-person-plus me-1"></i>Create user</button></div><div class="admin-panel"><div class="table-responsive"><table class="table admin-table align-middle"><thead><tr><th>User</th><th>Role</th><th>Status</th><th class="text-end">Manage</th></tr></thead><tbody>${users.map(u=>`<tr><td><strong>${esc(u.first_name)} ${esc(u.last_name)}</strong><div class="small text-muted">${esc(u.email)}</div></td><td><span class="role-badge">${u.role}</span></td><td>${u.status}</td><td class="text-end"><button class="action-btn" onclick="userModal(${u.user_id})"><i class="bi bi-pencil"></i></button><button class="action-btn danger" onclick="deleteUser(${u.user_id})"><i class="bi bi-trash3"></i></button></td></tr>`).join('')}</tbody></table></div></div>`);
 }
 
+async function loadAuditLogs() {
+    try {
+        let res = await fetch(`/api/audit-logs?page=${auditPage}`);
+        let data = await res.json();
+        auditLogs = data.data;
+        auditTotalPages = data.pages;
+    } catch(e) { auditLogs = []; }
+}
+
+function auditList() {
+    let actionColors = {
+        'login': '#16a34a', 'logout': '#6b7280',
+        'user.created': '#2563eb', 'user.updated': '#ca8a04', 'user.deleted': '#dc2626',
+        'bidding.created': '#16a34a', 'bidding.updated': '#ca8a04', 'bidding.deleted': '#dc2626',
+    };
+    let actionIcons = {
+        'login': 'bi-box-arrow-in-right', 'logout': 'bi-box-arrow-right',
+        'user.created': 'bi-person-plus', 'user.updated': 'bi-pencil', 'user.deleted': 'bi-person-x',
+        'bidding.created': 'bi-file-earmark-plus', 'bidding.updated': 'bi-pencil-square', 'bidding.deleted': 'bi-trash3',
+    };
+    return adminShell(`<div class="admin-heading"><div><div class="eyebrow">Activity log</div><h1>Audit trail</h1><p>Track all actions performed on the system.</p></div></div><div class="admin-panel"><div class="table-responsive"><table class="table admin-table align-middle"><thead><tr><th>Date / Time</th><th>User</th><th>Action</th><th>Description</th><th>IP Address</th></tr></thead><tbody>${auditLogs.length ? auditLogs.map(l=>`<tr><td class="text-nowrap"><div style="font-size:.82rem">${new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div><div class="project-code">${new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div></td><td><strong>${esc(l.user_name||'System')}</strong></td><td><span style="display:inline-flex;align-items:center;gap:5px;font-size:.76rem;font-weight:700;color:${actionColors[l.action]||'var(--muted)'}"><i class="bi ${actionIcons[l.action]||'bi-circle'}"></i>${esc(l.action)}</span></td><td style="max-width:320px;font-size:.82rem;color:var(--muted)">${esc(l.description||'—')}</td><td class="mono" style="font-size:.72rem;color:var(--muted)">${esc(l.ip_address||'—')}</td></tr>`).join('') : '<tr><td colspan="5" class="text-center text-muted py-4">No activity recorded yet.</td></tr>'}</tbody></table></div>${auditTotalPages > 1 ? `<div class="table-footer"><span class="small text-muted">Page ${auditPage+1} of ${auditTotalPages}</span><div class="d-flex gap-2"><button class="btn-outline-civic btn-sm" ${auditPage===0?'disabled':''} onclick="auditPage--;loadAuditLogs().then(render)">Previous</button><button class="btn-outline-civic btn-sm" ${auditPage>=auditTotalPages-1?'disabled':''} onclick="auditPage++;loadAuditLogs().then(render)">Next</button></div></div>` : ''}</div>`);
+}
+
 function render() {
-    document.getElementById('app').innerHTML = adminTab==='overview'?overview():adminTab==='projects'?projectList():adminTab==='users'?usersList():projectForm();
+    document.getElementById('app').innerHTML = adminTab==='overview'?overview():adminTab==='projects'?projectList():adminTab==='users'?usersList():adminTab==='audit'?auditList():projectForm();
 }
 
 function addTitle() {
@@ -162,7 +188,40 @@ async function deleteBidding(id) {
 async function userModal(id='') {
     let u = id ? users.find(x => x.user_id == id) : {first_name:'',last_name:'',middle_initial:'',email:'',role:'Editor',status:'ACTIVE'};
     let fullName = `${u.first_name||''} ${u.middle_initial?u.middle_initial+'. ':''}${u.last_name||''}`.trim();
-    document.body.insertAdjacentHTML('beforeend', `<div class="modal-backdrop-custom" onclick="if(event.target===this)this.remove()"><div class="custom-modal" style="max-width:620px"><div class="modal-head"><h2 class="mb-0">${id?'Edit user':'Create user'}</h2><button class="close-btn" onclick="this.closest('.modal-backdrop-custom').remove()"><i class="bi bi-x-lg"></i></button></div><form onsubmit="saveUser(event,'${id}')"><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Full name</label><input required id="user-name" class="form-control" value="${esc(fullName)}"></div><div class="col-md-6"><label class="form-label">Email</label><input required type="email" id="user-email" class="form-control" value="${esc(u.email||'')}"></div><div class="col-md-6"><label class="form-label">Password</label><input type="password" id="user-password" class="form-control" placeholder="${id?'Leave blank to keep current':'Enter password'}" ${id?'':'required'}></div><div class="col-md-6"><label class="form-label">Role</label><select id="user-role" class="form-select"><option ${u.role==='Administrator'?'selected':''}>Administrator</option><option ${u.role==='Editor'?'selected':''}>Editor</option><option ${u.role==='Viewer'?'selected':''}>Viewer</option></select></div><div class="col-md-6"><label class="form-label">Status</label><select id="user-status" class="form-select"><option ${u.status==='ACTIVE'?'selected':''}>ACTIVE</option><option ${u.status==='INACTIVE'?'selected':''}>INACTIVE</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn-outline-civic" onclick="this.closest('.modal-backdrop-custom').remove()">Cancel</button><button class="btn-civic">Save user</button></div></form></div></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div class="modal-backdrop-custom" onclick="if(event.target===this)this.remove()"><div class="custom-modal" style="max-width:620px"><div class="modal-head"><h2 class="mb-0">${id?'Edit user':'Create user'}</h2><button class="close-btn" onclick="this.closest('.modal-backdrop-custom').remove()"><i class="bi bi-x-lg"></i></button></div><form onsubmit="saveUser(event,'${id}')"><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Full name</label><input required id="user-name" class="form-control" value="${esc(fullName)}"></div><div class="col-md-6"><label class="form-label">Email</label><input required type="email" id="user-email" class="form-control" value="${esc(u.email||'')}"></div><div class="col-md-6"><label class="form-label">Role</label><select id="user-role" class="form-select"><option ${u.role==='Administrator'?'selected':''}>Administrator</option><option ${u.role==='Editor'?'selected':''}>Editor</option><option ${u.role==='Viewer'?'selected':''}>Viewer</option></select></div><div class="col-md-6"><label class="form-label">Status</label><select id="user-status" class="form-select"><option ${u.status==='ACTIVE'?'selected':''}>ACTIVE</option><option ${u.status==='INACTIVE'?'selected':''}>INACTIVE</option></select></div><div class="col-md-6"><label class="form-label">Password</label><div class="pw-wrap"><input type="password" id="user-password" class="form-control" placeholder="${id?'Leave blank to keep current':'Enter password'}" oninput="checkPwStrength()" ${id?'':'required'}><button type="button" class="pw-toggle" onclick="toggleModalPw('user-password','pw-icon-1')" aria-label="Toggle password visibility"><i class="bi bi-eye" id="pw-icon-1"></i></button></div></div><div class="col-md-6"><label class="form-label">Retype password</label><div class="pw-wrap"><input type="password" id="user-password-confirm" class="form-control" placeholder="${id?'Leave blank to keep current':'Re-enter password'}" ${id?'':'required'}><button type="button" class="pw-toggle" onclick="toggleModalPw('user-password-confirm','pw-icon-2')" aria-label="Toggle password visibility"><i class="bi bi-eye" id="pw-icon-2"></i></button></div></div><div class="col-12" id="pw-req" style="display:none"><div class="pw-hint"><span id="pw-r1"><i class="bi bi-check2"></i> 8+ characters</span><span id="pw-r2"><i class="bi bi-check2"></i> Uppercase</span><span id="pw-r3"><i class="bi bi-check2"></i> Lowercase</span><span id="pw-r4"><i class="bi bi-check2"></i> Number</span><span id="pw-r5"><i class="bi bi-check2"></i> Special char</span></div></div></div></div><div class="modal-foot"><button type="button" class="btn-outline-civic" onclick="this.closest('.modal-backdrop-custom').remove()">Cancel</button><button class="btn-civic">Save user</button></div></form></div></div>`);
+}
+
+function toggleModalPw(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+function checkPwStrength() {
+    const pw = document.getElementById('user-password')?.value || '';
+    const box = document.getElementById('pw-req');
+    if (!box) return;
+    box.style.display = pw.length > 0 ? 'block' : 'none';
+
+    const checks = [
+        { id: 'pw-r1', test: pw.length >= 8 },
+        { id: 'pw-r2', test: /[A-Z]/.test(pw) },
+        { id: 'pw-r3', test: /[a-z]/.test(pw) },
+        { id: 'pw-r4', test: /[0-9]/.test(pw) },
+        { id: 'pw-r5', test: /[^A-Za-z0-9]/.test(pw) },
+    ];
+    checks.forEach(c => {
+        const el = document.getElementById(c.id);
+        if (!el) return;
+        el.className = c.test ? 'pw-ok' : '';
+    });
 }
 
 async function saveUser(e, id) {
@@ -185,14 +244,48 @@ async function saveUser(e, id) {
         status: e.target.querySelector('#user-status').value,
     };
     let pw = e.target.querySelector('#user-password').value;
-    if (pw) data.password = pw;
-    
+    let pwConfirm = e.target.querySelector('#user-password-confirm').value;
+    if (pw) {
+        if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)) {
+            toast('Password does not meet all requirements.','info'); return;
+        }
+        if (pw !== pwConfirm) { toast('Passwords do not match.','info'); return; }
+        data.password = pw;
+    }
+
+    if (id && data.password) {
+        data.user_id = id;
+        confirmPwChange(data, id);
+        return;
+    }
+
+    await submitUser(data, id, e.target);
+}
+
+let _pendingUserData = null;
+let _pendingUserId = null;
+
+function confirmPwChange(data, id) {
+    _pendingUserData = data;
+    _pendingUserId = id;
+    document.body.insertAdjacentHTML('beforeend', `<div class="modal-backdrop-custom" id="pw-confirm-modal" onclick="if(event.target===this)this.remove()"><div class="custom-modal" style="max-width:400px"><div class="modal-head"><h2 class="mb-0">Change password?</h2><button class="close-btn" onclick="document.getElementById('pw-confirm-modal').remove()"><i class="bi bi-x-lg"></i></button></div><div class="modal-body"><p style="color:var(--muted);font-size:.88rem;margin:0">You are about to update this user's password. The user will need to use the new password on their next login.</p></div><div class="modal-foot"><button type="button" class="btn-outline-civic" onclick="document.getElementById('pw-confirm-modal').remove()">Cancel</button><button class="btn-civic" onclick="confirmPwProceed()">Confirm change</button></div></div></div>`);
+}
+
+async function confirmPwProceed() {
+    document.getElementById('pw-confirm-modal')?.remove();
+    if (!_pendingUserData) return;
+    await submitUser(_pendingUserData, _pendingUserId, null);
+    _pendingUserData = null;
+    _pendingUserId = null;
+}
+
+async function submitUser(data, id, modal) {
     let url = id ? `${API_USERS}/${id}` : API_USERS;
     let method = id ? 'PUT' : 'POST';
     let res = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
     if (res.ok) {
         toast(id ? 'User updated.' : 'User created.');
-        e.target.closest('.modal-backdrop-custom').remove();
+        document.querySelector('.modal-backdrop-custom')?.remove();
         await loadUsers();
         render();
     } else {
@@ -207,3 +300,12 @@ async function deleteUser(id) {
 }
 
 loadAll();
+
+window.addEventListener('pageshow', async function(e) {
+    if (e.persisted) {
+        try {
+            let res = await fetch('/api/auth/check');
+            if (!res.ok) { window.location.href = '/admin/login'; return; }
+        } catch(e) { window.location.href = '/admin/login'; }
+    }
+});
