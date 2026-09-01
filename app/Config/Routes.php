@@ -3,7 +3,8 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
-$routes->get('/', 'Home::index');
+$routes->get('/', 'Public\Home::index');
+$routes->get('admin', 'Admin\Home::index');
 
 // API Routes
 $routes->group('api', function ($routes) {

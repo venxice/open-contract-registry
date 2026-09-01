@@ -23,7 +23,7 @@ class Upload extends BaseController
         }
 
         $newName = 'doc_' . time() . '_' . bin2hex(random_bytes(4)) . '.pdf';
-        $file->move(WRITEPATH . 'uploads', $newName, true);
+        $file->move(FCPATH . 'uploads', $newName, true);
 
         return $this->response->setJSON([
             'path' => '/uploads/' . $newName,
