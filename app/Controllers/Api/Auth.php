@@ -71,20 +71,7 @@ class Auth extends BaseController
         $user = $userModel->where('email', $email)->first();
 
         if (!$user) {
-            $randomPassword = bin2hex(random_bytes(16));
-            $userId = $userModel->insert([
-                'first_name' => $givenName,
-                'last_name' => $familyName,
-                'middle_initial' => '',
-                'email' => $email,
-                'password' => password_hash($randomPassword, PASSWORD_DEFAULT),
-                'role' => 'Viewer',
-                'status' => 'ACTIVE',
-            ]);
-            if (!$userId) {
-                return redirect()->to('/admin/login?error=' . urlencode('Failed to create account'));
-            }
-            $user = $userModel->find($userId);
+            return redirect()->to('/admin/login?error=' . urlencode('No account found. Contact admin to register your email.'));
         }
 
         if ($user['status'] !== 'ACTIVE') {
