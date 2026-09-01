@@ -2,7 +2,7 @@ const API = '/api/biddings';
 let state = [], year = '', query = '';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
-const money = v => new Intl.NumberFormat('en-US', {style:'currency',currency:'USD',maximumFractionDigits:0}).format(v||0);
+const money = v => new Intl.NumberFormat('en-PH', {style:'currency',currency:'PHP',maximumFractionDigits:0}).format(v||0);
 const fmt = v => v ? new Intl.DateTimeFormat('en-US', {month:'short',day:'numeric',year:'numeric'}).format(new Date(v+'T00:00:00')) : '—';
 const allDesc = p => (p.projects||[]).flatMap(t => t.descriptions||[]);
 
