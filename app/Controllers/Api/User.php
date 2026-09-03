@@ -17,7 +17,12 @@ class User extends BaseController
 
     public function index()
     {
-        return $this->response->setJSON($this->userModel->findAll());
+        $users = $this->userModel->findAll();
+        $safe = array_map(function ($u) {
+            unset($u['password']);
+            return $u;
+        }, $users);
+        return $this->response->setJSON($safe);
     }
 
     public function show($id = null)
@@ -26,6 +31,7 @@ class User extends BaseController
         if (!$user) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Not found']);
         }
+        unset($user['password']);
         return $this->response->setJSON($user);
     }
 

@@ -11,7 +11,6 @@ $routes->get('admin/login', 'Admin\Login::index');
 $routes->post('api/auth/login', 'Api\Auth::login');
 $routes->post('api/auth/logout', 'Api\Auth::logout');
 $routes->get('api/auth/check', 'Api\Auth::check');
-$routes->post('api/auth/google', 'Api\Auth::google');
 $routes->get('api/auth/google/callback', 'Api\Auth::googleCallback');
 
 // API Routes

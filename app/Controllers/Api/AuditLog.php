@@ -16,7 +16,7 @@ class AuditLog extends BaseController
         $dateFrom = $this->request->getGet('from') ?? '';
         $dateTo = $this->request->getGet('to') ?? '';
 
-        $result = $model->getLogs($perPage, $search, $dateFrom, $dateTo);
+        $result = $model->getLogs($perPage, $page, $search, $dateFrom, $dateTo);
 
         return $this->response->setJSON([
             'data' => $result['data'],

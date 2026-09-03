@@ -35,7 +35,7 @@ class AuditLogModel extends Model
         ]);
     }
 
-    public function getLogs(int $perPage = 20, string $search = '', string $dateFrom = '', string $dateTo = '')
+    public function getLogs(int $perPage = 20, int $page = 0, string $search = '', string $dateFrom = '', string $dateTo = '')
     {
         $builder = $this->db->table('audit_logs');
         $builder->orderBy('created_at', 'DESC');
@@ -56,7 +56,6 @@ class AuditLogModel extends Model
         }
 
         $total = $builder->countAllResults(false);
-        $page = (int)($_GET['page'] ?? 0);
         $results = $builder->limit($perPage, $page * $perPage)->get()->getResultArray();
 
         return ['data' => $results, 'total' => $total];

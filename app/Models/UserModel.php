@@ -11,5 +11,4 @@ class UserModel extends Model
     protected $allowedFields = ['first_name', 'last_name', 'middle_initial', 'email', 'password', 'role', 'status'];
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
-    protected $hidden = ['password'];
 }
